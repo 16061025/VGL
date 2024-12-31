@@ -40,9 +40,10 @@ class VGLModel(nn.Module):
 def train_VGLModel(VGL_model, train_loader, loss_fn, optimizer, args):
 
     VGL_model.train()
-    for batch, (Xs, adjs, y) in enumerate(train_loader):
+    for batch, data in enumerate(train_loader):
+        feats, adjs, y = data
         size = len(train_loader.dataset)
-        pre = VGL_model(Xs, adjs)
+        pre = VGL_model(feats, adjs)
         loss = loss_fn(pre, y)
         loss.backward()
         optimizer.step()

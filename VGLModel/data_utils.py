@@ -9,6 +9,7 @@ import random
 import math
 from VisibilityGraph.VisibilityGraph import construct_EEG_visibility_graph
 from hgcn.utils.data_utils import  sparse_mx_to_torch_sparse_tensor
+from torch.utils.data import Dataset
 
 def load_EEG_data(args):
     '''
@@ -49,31 +50,51 @@ def load_MRI_data():
     return
 
 
+def VGL_collate_fn(batch):
+    return batch
 
+class VGLDataset(Dataset):
+    def __init__(self, data, labels):
+        self.data = data
+        self.labels = labels
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        return self.data[idx], self.labels[idx]
 
 def construct_VGL_dataset(VG_list):
-    AD_data = []
-    non_AD_data = []
+    data_x = []
+    data_y = []
+    random.shuffle(VG_list)
     for patient_data in VG_list:
         x_data = patient_data['VG']
-        Xs = [[] for i in range(len(x_data))]
+        feats = [[] for i in range(len(x_data))]
         adjs = [[] for i in range(len(x_data))]
         for i in range(len(x_data)):
             for j in range(len(x_data[i])):
-                x = torch.Tensor(x_data[i][j][1])
+                feat = torch.Tensor(x_data[i][j][1])
                 adj = sparse_mx_to_torch_sparse_tensor(x_data[i][j][0])
-                Xs[i].append(x)
+                feats[i].append(feat)
                 adjs[i].append(adj)
         if patient_data['label']=="AD":
-            y = torch.Tensor(1)
-            AD_data.append((Xs,adjs,y))
+            y = 1
         else:
-            y = torch.Tensor(0)
-            non_AD_data.append((Xs,adjs,y))
+            y = 0
+        data_x.append([feats,adjs])
+        data_y.append(y)
+    data_x = torch.Tensor(data_x)
+    data_y = torch.Tensor(data_y)
     ratio = 0.8
     split_index = math.floor(ratio*len(VG_list))
-    random.shuffle(AD_data)
-    random.shuffle(non_AD_data)
-    train_data = AD_data[0:split_index] + non_AD_data[0:split_index]
-    test_data = AD_data[split_index:] + non_AD_data[split_index:]
-    return train_data, test_data
+
+    train_data_x = data_x[0:split_index]
+    train_data_y = data_y[0:split_index]
+    train_dataset = VGLDataset(train_data_x, train_data_y)
+
+    test_data_x = data_x[split_index:]
+    test_data_y = data_y[split_index:]
+    test_dataset = VGLDataset(test_data_x, test_data_y)
+
+    return train_dataset, test_dataset

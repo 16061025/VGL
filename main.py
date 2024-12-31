@@ -2,7 +2,7 @@ from args import parser
 from VisibilityGraph.VisibilityGraph import construct_EEG_visibility_graph
 from VisibilityGraph.VisibilityGraph import construct_EEG_visibility_graph_single_process
 from hgcn.trainHGCN import train_HGCN
-from VGLModel.data_utils import load_EEG_data, construct_VGL_dataset
+from VGLModel.data_utils import load_EEG_data, construct_VGL_dataset, VGL_collate_fn
 from utils.data_utils import process, mask_edges
 from RSA import RDMModel
 
@@ -48,12 +48,14 @@ if __name__ == '__main__':
     ##step 2 construct visibility graph
     EEG_visibility_graph_list = construct_EEG_visibility_graph_single_process(EEG_data)
     VGL_train_data, VGL_test_data = construct_VGL_dataset(EEG_visibility_graph_list)
-    Xs, adjs, y = VGL_train_data[0]
-    args.n_nodes, args.feat_dim = Xs[0][0].shape
+    feats, adjs, y = VGL_train_data[0]
+    args.n_nodes, args.feat_dim = feats[0][0].shape
 
     batch_size = 1
-    train_dataloader = DataLoader(VGL_train_data, batch_size=batch_size)
-    test_dataloader = DataLoader(VGL_test_data, batch_size=batch_size)
+
+
+    train_dataloader = DataLoader(VGL_train_data, batch_size=batch_size, collate_fn=VGL_collate_fn)
+    test_dataloader = DataLoader(VGL_test_data, batch_size=batch_size, collate_fn=VGL_collate_fn)
 
 
     model = VGLModel(args)
@@ -61,6 +63,9 @@ if __name__ == '__main__':
     loss_fn = torch.nn.CrossEntropyLoss()
 
     train_VGLModel(model, train_dataloader, loss_fn, optimizer, args)
+
+
+
 
 
     ##step 3 hyperbolic Graph convolution
