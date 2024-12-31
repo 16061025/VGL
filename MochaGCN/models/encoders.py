@@ -6,10 +6,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 import manifolds
-from hgcn.layers.att_layers import GraphAttentionLayer
-import hgcn.layers.hyp_layers as hyp_layers
-from hgcn.layers.layers import GraphConvolution, Linear, get_dim_act
-import hgcn.utils.math_utils as pmath
+from layers.att_layers import GraphAttentionLayer
+import layers.hyp_layers as hyp_layers
+from layers.layers import GraphConvolution, Linear, get_dim_act, GCNLayer
+import utils.math_utils as pmath
+from torch_geometric.nn import GCNConv
+from Norm.norm import Norm
 
 
 class Encoder(nn.Module):
@@ -72,23 +74,57 @@ class HNN(Encoder):
         x_hyp = self.manifold.proj(self.manifold.expmap0(self.manifold.proj_tan0(x, self.c), c=self.c), c=self.c)
         return super(HNN, self).encode(x_hyp, adj)
 
-class GCN(Encoder):
-    """
-    Graph Convolution Networks.
-    """
+# class GCN(Encoder):
+#     """
+#     Graph Convolution Networks.
+#     """
+#
+#     def __init__(self, c, args):
+#         super(GCN, self).__init__(c)
+#         assert args.num_layers > 0
+#         dims, acts = get_dim_act(args)
+#         gc_layers = []
+#         for i in range(len(dims) - 1):
+#             in_dim, out_dim = dims[i], dims[i + 1]
+#             act = acts[i]
+#             gc_layers.append(GraphConvolution(in_dim, out_dim, args.dropout, act, args.bias))
+#         self.layers = nn.Sequential(*gc_layers)
+#         self.encode_graph = True
 
+class GCN(nn.Module):
     def __init__(self, c, args):
-        super(GCN, self).__init__(c)
+        super(GCN, self).__init__()
         assert args.num_layers > 0
         dims, acts = get_dim_act(args)
         gc_layers = []
         for i in range(len(dims) - 1):
             in_dim, out_dim = dims[i], dims[i + 1]
             act = acts[i]
-            gc_layers.append(GraphConvolution(in_dim, out_dim, args.dropout, act, args.bias))
-        self.layers = nn.Sequential(*gc_layers)
+            gc_layers.append(GCNLayer(in_dim, out_dim, args.dropout, act))
+        self.layers = nn.ModuleList(gc_layers)
         self.encode_graph = True
 
+        # Initialize parameters
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        for layer in self.layers:
+            if isinstance(layer.conv, GCNConv):
+                layer.conv.reset_parameters()
+            elif isinstance(layer.conv, nn.Linear):
+                nn.init.xavier_uniform_(layer.conv.weight)
+                if layer.conv.bias is not None:
+                    nn.init.zeros_(layer.conv.bias)
+
+    def forward(self, x, edge_index):
+        for layer in self.layers:
+            x = layer(x, edge_index)
+        return x
+
+    def encode(self, x, edge_index):
+        for layer in self.layers:
+            x = layer(x, edge_index)
+        return x
 
 class HGCN(Encoder):
     """
@@ -99,18 +135,46 @@ class HGCN(Encoder):
         super(HGCN, self).__init__(c)
         self.manifold = getattr(manifolds, args.manifold)()
         assert args.num_layers > 1
-        dims, acts, self.curvatures = hyp_layers.get_dim_act_curv(args)
+        dims, acts, self.curvatures,use_acts = hyp_layers.get_dim_act_curv(args)
+        print(dims,'dims')
+        print(acts,'acts')
+        print(use_acts,'uise acts')
         self.curvatures.append(self.c)
         hgc_layers = []
+        # Norm(norm_type, self.args.embed_size)
+        use_frechet_agg = True if (hasattr(args,'use_frechet_agg') and args.use_frechet_agg>0) else False
+        use_output_agg = args.output_agg if (hasattr(args,'output_agg')) else True
+        # use_frechet_agg=False
+        use_norm = True if hasattr(args,'use_norm') and args.use_norm>0 else False
+        hyp_act = True if hasattr(args,'hyp_act') and args.hyp_act else False
+
+        if hyp_act:
+            assert args.act not in ('leaky_relu', 'elu', 'selu')
+        # norm_type='bn'
+        norm_type='gn'
+        # norm_type='rbn'
         for i in range(len(dims) - 1):
             c_in, c_out = self.curvatures[i], self.curvatures[i + 1]
             in_dim, out_dim = dims[i], dims[i + 1]
+            print(norm_type,'NORMAL TYPE')
+            norm = Norm(norm_type, args,out_dim) if ((i<len(dims)-2) and (use_norm)) else None ## can't be batching output@
+            use_agg = True if ((i<len(dims)-2) or (use_output_agg)) else False ## can't be batching output@
+
+            print(use_agg,'USE AGG')
+
+            # norm=None
             act = acts[i]
+
+            use_act=use_acts[i]
             hgc_layers.append(
                     hyp_layers.HyperbolicGraphConvolution(
-                            self.manifold, in_dim, out_dim, c_in, c_out, args.dropout, act, args.bias, args.use_att, args.local_agg
+                            self.manifold, in_dim, out_dim, c_in, c_out,
+                             args.dropout, act, args.bias, args.use_att, args.local_agg,use_frechet_agg,use_act=use_act,norm=norm,args=args,use_agg=use_agg
                     )
             )
+        # sdd
+        # jsjsj
+        self.layers_list=hgc_layers
         self.layers = nn.Sequential(*hgc_layers)
         self.encode_graph = True
 

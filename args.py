@@ -54,6 +54,18 @@ config_args = {
         'normalize-adj': (1, 'whether to row-normalize the adjacency matrix'),
         'split-seed': (1234, 'seed for data splits (train/test/val)'),
     },
+    ##VGL config
+    'VGL_dataconfig':{
+        'n_channels': (128, 'number of EEG data channels'),
+        'n_sections': (5, 'split number of a channel'),
+        'n_classes':(2, 'number of label classes')
+    },
+
+    ##mocha config
+    'mocha_modelconfig':{
+        'device': ('cpu', 'training device'),
+    },
+
 
 }
 

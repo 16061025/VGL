@@ -8,6 +8,7 @@ import numpy as np
 import networkx as nx
 import scipy.sparse as sp
 import math
+import scipy
 
 
 def Worker(process_args):
@@ -18,55 +19,59 @@ def Worker(process_args):
     :return:
     '''
 
+    #paras
+    is_devide_ts = False
+    sections = 10
+    downsample_factor = 10
+
     share_res_list = process_args["share_res_list"]
     share_res_list_Lock = process_args["share_res_list_Lock"]
     EEG_data = process_args["EEG_data"]
     Process_id = process_args['Process_id']
-    is_devide_ts = False
-    sections = 10
-    downsample_rate = 0.1
+
 
     print("start process ", Process_id, "PID", os.getpid())
 
     all_graph_list = []
-    for patient_EEG_raw in EEG_data:
+    for patient_EEG_data in EEG_data:
+        patient_EEG_raw = patient_EEG_data['raw']
         N_channels = len(patient_EEG_raw.ch_names)
+        patient_VG_list = []
         for i in range(N_channels):
-            channel_ts = patient_EEG_raw[i,:][0]
+            channel_ts, times = patient_EEG_raw[i, :]
             channel_ts_np = np.array(channel_ts).flatten()
-            if is_devide_ts:
-                #devide
-                devided_channel_ts_np_list = np.split(channel_ts_np, sections)
-                #downsample
-                devided_VG_list = []
-                for ts in devided_channel_ts_np_list:
-                    section_length = math.ceil(1/downsample_rate)
-                    pad_length = section_length - (len(ts) % section_length)
-                    ts = np.pad(ts, (0, pad_length), mode="constant", constant_values=0)
-                    ts = ts.reshape(-1, section_length).mean(axis=1)
-                    vg = ts2vg.NaturalVG()
-                    vg.build(channel_ts_np)
-                    graph_edges = vg.edges
-                    graph = nx.Graph(graph_edges)
-                    adj = nx.adjacency_matrix(graph)
 
-                    node_feature_1 = np.arange(0, len(channel_ts_np))[:, np.newaxis]
-                    node_feature_2 = channel_ts_np[:, np.newaxis]
-                    node_features = np.hstack(node_feature_1, node_feature_2)
-                    devided_VG_list.append((sp.csr_matrix(adj), node_features))
-                all_graph_list.append(devided_VG_list)
-            else:
+            def tsnp2vg(ts_np):
                 vg = ts2vg.NaturalVG()
-                vg.build(channel_ts_np)
+                vg.build(ts_np)
                 graph_edges = vg.edges
                 graph = nx.Graph(graph_edges)
                 adj = nx.adjacency_matrix(graph)
 
-                node_feature_1 = np.arange(0, len(channel_ts_np))[:, np.newaxis]
-                node_feature_2 = channel_ts_np[:, np.newaxis]
-                node_features = np.hstack(node_feature_1, node_feature_2)
+                node_feature_1 = np.arange(0, len(ts_np))[:, np.newaxis]
+                node_feature_2 = ts_np[:, np.newaxis]
+                node_features = np.hstack((node_feature_1, node_feature_2))
+                return sp.csr_matrix(adj), node_features
 
-                all_graph_list.append((sp.csr_matrix(adj), node_features))
+            if is_devide_ts:
+                #devide chancel ts into N subsections N=secitons
+                #make sure it can be divided into N equal arrays
+                clip_length = len(channel_ts_np) - (len(channel_ts_np)%sections)
+                channel_ts_np = channel_ts_np[0:clip_length]
+
+                devided_channel_ts_np_list = np.split(channel_ts_np, sections)
+
+                #downsample every subsection
+                devided_VG_list = []
+                for ts in devided_channel_ts_np_list:
+                    downsampled_ts = scipy.signal.decimate(ts, downsample_factor)
+                    devided_VG_list.append(tsnp2vg(downsampled_ts))
+                patient_VG_list.append(devided_VG_list)
+            else:
+                patient_VG_list.append(tsnp2vg(channel_ts_np))
+        patient_EEG_data.pop('raw')
+        patient_EEG_data['VG'] = patient_VG_list
+        all_graph_list.append(patient_EEG_data)
 
     share_res_list_Lock.acquire()
 
@@ -81,7 +86,12 @@ def Worker(process_args):
 
 
 
-def construct_EEG_visibility_grapy(EEG_data):
+def construct_EEG_visibility_graph(EEG_data):
+    '''
+    convert EEG into visual graph
+    :param EEG_data: a list contains EEG_raw data of N patients
+    :return:  a list contains visual graph of EEG_raw data of N patients, each patient has N_cha*N_sec graph
+    '''
 
     def init_share_res_list(res_list):
         return res_list
@@ -92,9 +102,14 @@ def construct_EEG_visibility_grapy(EEG_data):
     share_res_list_Lock = Manager().Lock()
 
     def divide_EEG_data(EEG_data):
+        '''
+        divide N EEG_raw data into M group M=process_cnt
+        :param EEG_data: a list contains EEG_raw data of N patients
+        :return: a list contains M list of EEG_raw
+        '''
         divided_EEG_data_list = []
-        process_cnt = 2
-        interval = len(EEG_data)//process_cnt
+        process_cnt = 1
+        interval = max(len(EEG_data)//process_cnt, 1)
         start_index = np.arange(0, process_cnt+1) * interval
         start_index[-1] = len(EEG_data)
         for i in range(process_cnt):
@@ -121,4 +136,51 @@ def construct_EEG_visibility_grapy(EEG_data):
     for p in proecesses:
         p.join()
     all_graph_list = list(share_res_list)
+    return all_graph_list
+
+def construct_EEG_visibility_graph_single_process(EEG_data):
+    is_devide_ts = True
+    downsample_factor = 1000
+    sections = 5
+    all_graph_list = []
+    for patient_EEG_data in EEG_data:
+        patient_EEG_raw = patient_EEG_data['raw']
+        N_channels = len(patient_EEG_raw.ch_names)
+        patient_VG_list = []
+        for i in range(N_channels):
+            channel_ts, times = patient_EEG_raw[i, :]
+            #channel_ts = patient_EEG_raw[i, :]
+            channel_ts_np = np.array(channel_ts).flatten()
+
+            def tsnp2vg(ts_np):
+                vg = ts2vg.NaturalVG()
+                vg.build(ts_np)
+                graph_edges = vg.edges
+                graph = nx.Graph(graph_edges)
+                adj = nx.adjacency_matrix(graph)
+
+                node_feature_1 = np.arange(0, len(ts_np))[:, np.newaxis]
+                node_feature_2 = ts_np[:, np.newaxis]
+                node_features = np.hstack((node_feature_1, node_feature_2))
+                return [sp.csr_matrix(adj), node_features]
+
+            if is_devide_ts:
+                # devide chancel ts into N subsections N=secitons
+                # make sure it can be divided into N equal arrays
+                clip_length = len(channel_ts_np) - (len(channel_ts_np) % sections)
+                channel_ts_np = channel_ts_np[0:clip_length]
+
+                devided_channel_ts_np_list = np.split(channel_ts_np, sections)
+
+                # downsample every subsection
+                devided_VG_list = []
+                for ts in devided_channel_ts_np_list:
+                    downsampled_ts = scipy.signal.decimate(ts, downsample_factor)
+                    devided_VG_list.append(tsnp2vg(downsampled_ts))
+                patient_VG_list.append(devided_VG_list)
+            else:
+                patient_VG_list.append(tsnp2vg(channel_ts_np))
+        patient_EEG_data.pop('raw')
+        patient_EEG_data['VG'] = patient_VG_list
+        all_graph_list.append(patient_EEG_data)
     return all_graph_list

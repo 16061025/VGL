@@ -1,7 +1,13 @@
+'''
+Representation Similarity Analysis
+
+
+'''
+
 import torch
 import torch.nn as nn
 
-class RDM_Module(nn.Module):
+class RDMModel(nn.Module):
     def __init__(self, distance_matircs="Pearson"):
         super().__init__()
         self.distance_matircs = distance_matircs

@@ -8,7 +8,7 @@ import torch.nn.functional as F
 
 from hgcn.layers.layers import FermiDiracDecoder
 import hgcn.layers.hyp_layers as hyp_layers
-import hgcn.manifolds
+import manifolds
 import hgcn.models.encoders as encoders
 from hgcn.models.decoders import model2decoder
 from hgcn.utils.eval_utils import acc_f1
@@ -97,8 +97,8 @@ class LPModel(BaseModel):
     def __init__(self, args):
         super(LPModel, self).__init__(args)
         self.dc = FermiDiracDecoder(r=args.r, t=args.t)
-        self.nb_false_edges = args.nb_false_edges
-        self.nb_edges = args.nb_edges
+        #self.nb_false_edges = args.nb_false_edges
+        #self.nb_edges = args.nb_edges
 
     def decode(self, h, idx):
         if self.manifold_name == 'Euclidean':
