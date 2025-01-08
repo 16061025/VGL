@@ -44,6 +44,7 @@ if __name__ == '__main__':
 
     ## select one user for demo
     EEG_data = [EEG_raw_data[0], EEG_raw_data[1]]
+    EEG_data = EEG_raw_data
 
     ##step 2 construct visibility graph
     EEG_visibility_graph_list = construct_EEG_visibility_graph_single_process(EEG_data)
@@ -51,11 +52,15 @@ if __name__ == '__main__':
     feats, adjs, y = VGL_train_data[0]
     args.n_nodes, args.feat_dim = feats[0][0].shape
 
-    batch_size = 1
+
+    batch_size = 2
 
 
-    train_dataloader = DataLoader(VGL_train_data, batch_size=batch_size, collate_fn=VGL_collate_fn)
-    test_dataloader = DataLoader(VGL_test_data, batch_size=batch_size, collate_fn=VGL_collate_fn)
+    # train_dataloader = DataLoader(VGL_train_data, batch_size=batch_size, collate_fn=VGL_collate_fn)
+    # test_dataloader = DataLoader(VGL_test_data, batch_size=batch_size, collate_fn=VGL_collate_fn)
+
+    train_dataloader = DataLoader(VGL_train_data, batch_size=batch_size)
+    test_dataloader = DataLoader(VGL_test_data, batch_size=batch_size)
 
 
     model = VGLModel(args)

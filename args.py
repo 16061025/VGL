@@ -64,6 +64,9 @@ config_args = {
     ##mocha config
     'mocha_modelconfig':{
         'device': ('cpu', 'training device'),
+        #'feat_dim':(128, 'graph node num and feat dim')
+        'mocha_feat_dim': (128, 'mocha graph feat dim'),
+        'mocha_n_nodes': (128, 'mocha graph n nodes')
     },
 
 

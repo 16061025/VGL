@@ -11,6 +11,7 @@ class RDMModel(nn.Module):
     def __init__(self, distance_matircs="Pearson"):
         super().__init__()
         self.distance_matircs = distance_matircs
+        self.flatten = nn.Flatten()
         return
 
     def calculate_similarity(self, embedding1, embedding2):
@@ -18,7 +19,16 @@ class RDMModel(nn.Module):
 
     def forward(self, embeddings):
         if self.distance_matircs == "Pearson":
-            pearson_corr_matrix = torch.corrcoef(embeddings)
+            if embeddings.dim() > 2:
+                pearson_corr_matrix_batch = []
+                batch_size = embeddings.size()[0]
+                for i in range(batch_size):
+                    var_embedding = embeddings[i]
+                    corr_matrix = torch.corrcoef(self.flatten(var_embedding))
+                    pearson_corr_matrix_batch.append(corr_matrix)
+                pearson_corr_matrix = torch.stack(pearson_corr_matrix_batch)
+            else:
+                pearson_corr_matrix = torch.corrcoef(self.flatten(embeddings))
             return pearson_corr_matrix
         if self.distance_matircs == "Euclidean":
             RDM_dim = len(embeddings)

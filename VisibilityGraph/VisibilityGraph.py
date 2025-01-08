@@ -23,6 +23,7 @@ def Worker(process_args):
     is_devide_ts = False
     sections = 10
     downsample_factor = 10
+    resample_num = 30
 
     share_res_list = process_args["share_res_list"]
     share_res_list_Lock = process_args["share_res_list_Lock"]
@@ -64,7 +65,8 @@ def Worker(process_args):
                 #downsample every subsection
                 devided_VG_list = []
                 for ts in devided_channel_ts_np_list:
-                    downsampled_ts = scipy.signal.decimate(ts, downsample_factor)
+                    downsampled_ts = scipy.signal.resample(ts, resample_num)
+                    #downsampled_ts = scipy.signal.decimate(ts, downsample_factor)
                     devided_VG_list.append(tsnp2vg(downsampled_ts))
                 patient_VG_list.append(devided_VG_list)
             else:
@@ -142,6 +144,7 @@ def construct_EEG_visibility_graph_single_process(EEG_data):
     is_devide_ts = True
     downsample_factor = 1000
     sections = 5
+    resample_num = 30
     all_graph_list = []
     for patient_EEG_data in EEG_data:
         patient_EEG_raw = patient_EEG_data['raw']
@@ -175,7 +178,8 @@ def construct_EEG_visibility_graph_single_process(EEG_data):
                 # downsample every subsection
                 devided_VG_list = []
                 for ts in devided_channel_ts_np_list:
-                    downsampled_ts = scipy.signal.decimate(ts, downsample_factor)
+                    downsampled_ts = scipy.signal.resample(ts, resample_num)
+                    # downsampled_ts = scipy.signal.decimate(ts, downsample_factor)
                     devided_VG_list.append(tsnp2vg(downsampled_ts))
                 patient_VG_list.append(devided_VG_list)
             else:
