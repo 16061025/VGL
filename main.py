@@ -47,6 +47,18 @@ if __name__ == '__main__':
     print(f"device is {device}")
     model = VGLModel(args).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.VGL_lr)
+
+    print(model)
+    logging.info(
+        model
+    )
+    # for name, param in model.named_parameters():
+    #     print(f"Name: {name}")
+    #     print(f"Shape: {param.shape}")
+    #     print(f"Requires Gradient: {param.requires_grad}")
+    #     print("-" * 50)
+
+
     loss_fn = torch.nn.CrossEntropyLoss()
 
     epochs = args.VGL_epochs
