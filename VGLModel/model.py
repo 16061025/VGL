@@ -17,10 +17,16 @@ class VGLModel(nn.Module):
         super().__init__()
         self.n_channels = args.n_channels
         self.n_sections = args.n_sections
-        self.hgcn_module = [[] for i in range(self.n_channels)]
-        for i in range(self.n_channels):
-            for j in range(self.n_sections):
-                self.hgcn_module[i].append(LPModel(args).to(args.device))
+        # self.hgcn_module = [[] for i in range(self.n_channels)]
+        # for i in range(self.n_channels):
+        #     for j in range(self.n_sections):
+        #         self.hgcn_module[i].append(LPModel(args).to(args.device))
+        self.hgcn_module = nn.ModuleList([
+            nn.ModuleList([
+                LPModel(args).to(args.device) for _ in range(self.n_sections)
+            ])
+            for _ in range(self.n_channels)
+        ])
         self.RDM_module = RDMModel().to(args.device)
         args.feat_dim = args.mocha_feat_dim
         args.n_nodes = args.mocha_n_nodes
@@ -89,22 +95,36 @@ class VGLModel(nn.Module):
 def train_VGLModel(VGL_model, train_loader, loss_fn, optimizer, args):
     res = {}
     VGL_model.train()
+    correct, size = 0, 0
     for batch, data in enumerate(train_loader):
         feats, adjs, y = data
         feats = feats.to(args.device)
         adjs = adjs.to(args.device)
         y = y.to(args.device)
-        size = len(train_loader.dataset)
-        pre = VGL_model(feats, adjs)
 
-        loss = loss_fn(pre, y)
+        pred = VGL_model(feats, adjs)
+
+        loss = loss_fn(pred, y)
         loss.backward()
         optimizer.step()
         optimizer.zero_grad()
 
+        size += len(train_loader.dataset)
+        correct += (pred.argmax(1) == y.argmax(1)).type(torch.float).sum().item()
 
+        if batch==0:
+            print("training...")
+            print("prediction res and label")
+            print(pred.tolist())
+            print(pred.argmax(1).tolist())
+            print("true res and label")
+            print(y.tolist())
+            print(y.argmax(1).tolist())
+
+    correct /= size
     loss = loss.item()
     res["loss"] = loss
+    res['correct'] = correct
     return res
 
 def test_VGLModel(VGL_model, test_loader, loss_fn, args):
