@@ -16,6 +16,7 @@ conda activate VGL
 Download EEG data into your data directory.
 
 ## Run Model
+Before running the bash commend, modify `--data_dir` to your dataset directory
 ```angular2html
 python main.py --task lp --dataset disease_lp --model HGCN --lr 0.01 --dim 16 --num-layers 2 --num-layers 2 --act relu --bias 1 --dropout 0 --weight-decay 0 --manifold PoincareBall --normalize-feats 0 --log-freq 5 --data_dir "PATH/TO/DATA/DIR"
 ```
