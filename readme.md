@@ -14,7 +14,16 @@ conda activate VGL
 
 ## Prepare DataSet
 Download EEG data into your data directory.
+```angular2html
+YOUR/DATA/DIR
+|
+|- EEG data
+   |
+   |- 1_AD
+   |- 2_bvFTD
+   ...
 
+```
 ## Run Model
 Before running the bash commend, modify `--data_dir` to your dataset directory
 ```angular2html
