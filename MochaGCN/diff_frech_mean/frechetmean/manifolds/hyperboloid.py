@@ -1,6 +1,6 @@
 import torch
 
-from diff_frech_mean.frechetmean.utils import (EPS, arcosh, arsinh, artanh, cosh, divsinh,
+from MochaGCN.diff_frech_mean.frechetmean.utils import (EPS, arcosh, arsinh, artanh, cosh, divsinh,
                                sinh, sinhdiv, tanh)
 
 from .manifold import Manifold

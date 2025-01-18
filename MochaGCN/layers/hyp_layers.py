@@ -7,10 +7,10 @@ import torch.nn.functional as F
 import torch.nn.init as init
 from torch.nn.modules.module import Module
 
-from layers.att_layers import DenseAtt
+from MochaGCN.layers.att_layers import DenseAtt
 
-from diff_frech_mean.frechetmean import Poincare as Frechet_Poincare
-from diff_frech_mean.frechet_agg import frechet_agg
+from MochaGCN.diff_frech_mean.frechetmean import Poincare as Frechet_Poincare
+from MochaGCN.diff_frech_mean.frechet_agg import frechet_agg
 
 def get_dim_act_curv(args):
     """
@@ -61,7 +61,7 @@ def get_dim_act_curv(args):
     else:
         # fixed curvature
         curvatures = [torch.tensor([args.c]) for _ in range(n_curvatures)]
-        if not args.device == 'cuda:0':
+        if not args.cuda == -1:
             curvatures = [curv.to(args.device) for curv in curvatures]
     return dims, acts, curvatures,use_acts
 
@@ -179,6 +179,7 @@ class HypLinear(nn.Module):
         self.weight = nn.Parameter(torch.Tensor(out_features, in_features))
         self.reset_parameters()
 
+
     def reset_parameters(self):
         init.xavier_uniform_(self.weight, gain=math.sqrt(2))
         init.constant_(self.bias, 0)
@@ -291,7 +292,7 @@ class HypAgg(Module):
 
         else:
 
-            print('nothing')
+            #print('nothing')
             support_t = torch.spmm(adj, x_tangent)
         output = self.manifold.proj(self.manifold.expmap0(support_t, c=self.c), c=self.c)
         return output

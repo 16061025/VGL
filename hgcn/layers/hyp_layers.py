@@ -36,6 +36,7 @@ def get_dim_act_curv(args):
         curvatures = [torch.tensor([args.c]) for _ in range(n_curvatures)]
         if not args.cuda == -1:
             curvatures = [curv.to(args.device) for curv in curvatures]
+
     return dims, acts, curvatures
 
 
@@ -92,11 +93,13 @@ class HypLinear(nn.Module):
         self.weight = nn.Parameter(torch.Tensor(out_features, in_features))
         self.reset_parameters()
 
+
     def reset_parameters(self):
         init.xavier_uniform_(self.weight, gain=math.sqrt(2))
         init.constant_(self.bias, 0)
 
     def forward(self, x):
+
         drop_weight = F.dropout(self.weight, self.dropout, training=self.training)
         mv = self.manifold.mobius_matvec(drop_weight, x, self.c)
         res = self.manifold.proj(mv, self.c)

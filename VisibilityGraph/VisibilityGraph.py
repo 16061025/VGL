@@ -1,5 +1,7 @@
+import logging
 import os
 
+import mne
 import ts2vg
 from tqdm import tqdm
 from multiprocessing import Manager
@@ -34,12 +36,17 @@ def Worker(process_args):
     print("start process ", Process_id, "PID", os.getpid())
 
     all_graph_list = []
-    for patient_EEG_data in EEG_data:
+    for patient_EEG_data in tqdm(EEG_data):
         patient_EEG_raw = patient_EEG_data['raw']
         N_channels = len(patient_EEG_raw.ch_names)
         patient_VG_list = []
+        try:
+            a = patient_EEG_raw[0, :]
+        except:
+            continue
         for i in range(N_channels):
             channel_ts, times = patient_EEG_raw[i, :]
+            # channel_ts = patient_EEG_raw[i, :]
             channel_ts_np = np.array(channel_ts).flatten()
 
             def tsnp2vg(ts_np):
@@ -52,21 +59,21 @@ def Worker(process_args):
                 node_feature_1 = np.arange(0, len(ts_np))[:, np.newaxis]
                 node_feature_2 = ts_np[:, np.newaxis]
                 node_features = np.hstack((node_feature_1, node_feature_2))
-                return sp.csr_matrix(adj), node_features
+                return [sp.csr_matrix(adj), node_features]
 
             if is_devide_ts:
-                #devide chancel ts into N subsections N=secitons
-                #make sure it can be divided into N equal arrays
-                clip_length = len(channel_ts_np) - (len(channel_ts_np)%sections)
+                # devide chancel ts into N subsections N=secitons
+                # make sure it can be divided into N equal arrays
+                clip_length = len(channel_ts_np) - (len(channel_ts_np) % sections)
                 channel_ts_np = channel_ts_np[0:clip_length]
 
                 devided_channel_ts_np_list = np.split(channel_ts_np, sections)
 
-                #downsample every subsection
+                # downsample every subsection
                 devided_VG_list = []
                 for ts in devided_channel_ts_np_list:
                     downsampled_ts = scipy.signal.resample(ts, resample_num)
-                    #downsampled_ts = scipy.signal.decimate(ts, downsample_factor)
+                    # downsampled_ts = scipy.signal.decimate(ts, downsample_factor)
                     devided_VG_list.append(tsnp2vg(downsampled_ts))
                 patient_VG_list.append(devided_VG_list)
             else:
@@ -110,7 +117,7 @@ def construct_EEG_visibility_graph(EEG_data):
         :return: a list contains M list of EEG_raw
         '''
         divided_EEG_data_list = []
-        process_cnt = 1
+        process_cnt = 4
         interval = max(len(EEG_data)//process_cnt, 1)
         start_index = np.arange(0, process_cnt+1) * interval
         start_index[-1] = len(EEG_data)
@@ -145,11 +152,44 @@ def construct_EEG_visibility_graph_single_process(EEG_data):
     downsample_factor = 1000
     sections = 5
     resample_num = 30
+    standard_channel_cnt = 128
     all_graph_list = []
-    for patient_EEG_data in EEG_data:
+
+    for patient_EEG_data in tqdm(EEG_data):
+
         patient_EEG_raw = patient_EEG_data['raw']
         N_channels = len(patient_EEG_raw.ch_names)
         patient_VG_list = []
+        try:
+            _a = patient_EEG_raw[0, :]
+        except:
+
+            logging.info(
+                f"can not read patient {patient_EEG_data['patientID']}"
+            )
+            continue
+
+        if N_channels > standard_channel_cnt:
+            logging.info(
+                f"patient {patient_EEG_data['patientID']} has {N_channels} channels more than standard {standard_channel_cnt}"
+            )
+            N_channels = standard_channel_cnt
+
+        elif N_channels < standard_channel_cnt:
+            logging.info(
+                f"patient {patient_EEG_data['patientID']} has {N_channels} channels less than standard {standard_channel_cnt}"
+            )
+            raw_data_np = np.array(patient_EEG_raw.get_data())
+            ref_channel_np = raw_data_np.mean(axis=0)
+            ref_channel_np = ref_channel_np[np.newaxis, :]
+            print(raw_data_np.shape)
+            for i in range(128 - N_channels):
+                ref_channel_info = mne.create_info(ch_names=['ref' + str(i)], ch_types=['eeg'], sfreq=patient_EEG_raw.info['sfreq'])
+                ref_channel = mne.io.RawArray(ref_channel_np, ref_channel_info)
+                patient_EEG_raw.add_channels([ref_channel])
+            N_channels = standard_channel_cnt
+
+
         for i in range(N_channels):
             channel_ts, times = patient_EEG_raw[i, :]
             #channel_ts = patient_EEG_raw[i, :]
@@ -184,6 +224,8 @@ def construct_EEG_visibility_graph_single_process(EEG_data):
                 patient_VG_list.append(devided_VG_list)
             else:
                 patient_VG_list.append(tsnp2vg(channel_ts_np))
+
+
         patient_EEG_data.pop('raw')
         patient_EEG_data['VG'] = patient_VG_list
         all_graph_list.append(patient_EEG_data)

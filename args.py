@@ -58,12 +58,23 @@ config_args = {
     'VGL_dataconfig':{
         'n_channels': (128, 'number of EEG data channels'),
         'n_sections': (5, 'split number of a channel'),
-        'n_classes':(2, 'number of label classes')
+        'n_classes':(2, 'number of label classes'),
+        'data_dir':("./data", "data path")
     },
-
+    'VGL_training_config': {
+        'VGL_lr': (0.01, 'learning rate'),
+        #'VGL_cuda': (-1, 'which cuda device to use (-1 for cpu training)'),
+        'VGL_epochs': (100, 'maximum number of epochs to train for'),
+        'VGL_seed': (1234, 'seed for training'),
+        'VGL_eval-freq': (1, 'how often to compute val metrics (in epochs)'),
+        'VGL_save': (0, '1 to save model and logs and 0 otherwise'),
+        'VGL_save_dir': ("./logs", 'path to save training logs and model weights (defaults to logs/task/date/run/)'),
+        'VGL_epochs': (100, 'maximum number of epochs to train for'),
+        'VGL_batch_size': (32, 'batch size'),
+    },
     ##mocha config
     'mocha_modelconfig':{
-        'device': ('cpu', 'training device'),
+        'device': ('cuda:0', 'training device'),
         #'feat_dim':(128, 'graph node num and feat dim')
         'mocha_feat_dim': (128, 'mocha graph feat dim'),
         'mocha_n_nodes': (128, 'mocha graph n nodes')

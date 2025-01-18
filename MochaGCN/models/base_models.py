@@ -7,12 +7,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import global_mean_pool
 
-from layers.layers import FermiDiracDecoder
-import layers.hyp_layers as hyp_layers
-import manifolds
-import models.encoders as encoders
-from models.decoders import model2decoder
-from utils.eval_utils import acc_f1
+from MochaGCN.layers.layers import FermiDiracDecoder
+import MochaGCN.layers.hyp_layers as hyp_layers
+import MochaGCN.manifolds as manifolds
+import MochaGCN.models.encoders as encoders
+from MochaGCN.models.decoders import model2decoder
+from MochaGCN.utils.eval_utils import acc_f1
 
 
 class BaseModel(nn.Module):

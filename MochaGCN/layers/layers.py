@@ -11,9 +11,9 @@ from torch_geometric.nn import GCNConv
 from torch_geometric.utils import dense_to_sparse
 
 
-from layers.att_layers import DenseAtt
-from diff_frech_mean.frechetmean import Poincare as Frechet_Poincare
-from diff_frech_mean.frechet_agg import frechet_agg
+from MochaGCN.layers.att_layers import DenseAtt
+from MochaGCN.diff_frech_mean.frechetmean import Poincare as Frechet_Poincare
+from MochaGCN.diff_frech_mean.frechet_agg import frechet_agg
 def get_dim_act(args):
     """
     Helper function to get dimension and activation at every layer.

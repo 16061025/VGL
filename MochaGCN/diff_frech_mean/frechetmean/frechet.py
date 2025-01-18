@@ -1,10 +1,10 @@
 import torch
 
-from diff_frech_mean.frechetmean.backward import frechet_ball_backward, frechet_hyperboloid_backward
-from diff_frech_mean.frechetmean.forward import frechet_ball_forward, frechet_hyperboloid_forward
-from diff_frech_mean.frechetmean.manifolds import Lorentz, Poincare, get_manifold_id
+from MochaGCN.diff_frech_mean.frechetmean.backward import frechet_ball_backward, frechet_hyperboloid_backward
+from MochaGCN.diff_frech_mean.frechetmean.forward import frechet_ball_forward, frechet_hyperboloid_forward
+from MochaGCN.diff_frech_mean.frechetmean.manifolds import Lorentz, Poincare, get_manifold_id
 
-from diff_frech_mean.frechetmean.utils import TOLEPS
+from MochaGCN.diff_frech_mean.frechetmean.utils import TOLEPS
 
 
 class FrechetMean(torch.autograd.Function):

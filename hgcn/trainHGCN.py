@@ -9,7 +9,7 @@ import pickle
 import time
 
 import numpy as np
-import optimizers
+import hgcn.optimizers
 import torch
 from hgcn.models.base_models import NCModel, LPModel
 from hgcn.utils.data_utils import load_data
@@ -70,7 +70,7 @@ def train_HGCN(data, args):
     # Model and optimizer
     model = Model(args)
     logging.info(str(model))
-    optimizer = getattr(optimizers, args.optimizer)(params=model.parameters(), lr=args.lr,
+    optimizer = getattr(hgcn.optimizers, args.optimizer)(params=model.parameters(), lr=args.lr,
                                                     weight_decay=args.weight_decay)
     lr_scheduler = torch.optim.lr_scheduler.StepLR(
         optimizer,

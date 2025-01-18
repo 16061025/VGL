@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 
-from diff_frech_mean.frechetmean.manifolds import Lorentz
-from diff_frech_mean.frechetmean.utils import d2arcosh, darcosh, darcoshsq_diff
+from MochaGCN.diff_frech_mean.frechetmean.manifolds import Lorentz
+from MochaGCN.diff_frech_mean.frechetmean.utils import d2arcosh, darcosh, darcoshsq_diff
 
 def hessian(X, y, w, K):
     """

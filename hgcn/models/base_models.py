@@ -8,7 +8,7 @@ import torch.nn.functional as F
 
 from hgcn.layers.layers import FermiDiracDecoder
 import hgcn.layers.hyp_layers as hyp_layers
-import manifolds
+import hgcn.manifolds
 import hgcn.models.encoders as encoders
 from hgcn.models.decoders import model2decoder
 from hgcn.utils.eval_utils import acc_f1
@@ -28,7 +28,7 @@ class BaseModel(nn.Module):
                 self.c = self.c.to(args.device)
         else:
             self.c = nn.Parameter(torch.Tensor([1.]))
-        self.manifold = getattr(manifolds, self.manifold_name)()
+        self.manifold = getattr(hgcn.manifolds, self.manifold_name)()
         if self.manifold.name == 'Hyperboloid':
             args.feat_dim = args.feat_dim + 1
         self.nnodes = args.n_nodes

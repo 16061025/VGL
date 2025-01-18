@@ -4,7 +4,7 @@ import logging
 import torch
 from MochaGCN.models.base_models import NCModel
 import torch.nn as nn
-from data import get_positive_negative_samples, construct_positive_negative_representations
+from MochaGCN.data import get_positive_negative_samples, construct_positive_negative_representations
 from torch_geometric.utils import to_dense_adj
 from torch_geometric.nn import global_mean_pool, global_max_pool, global_add_pool
 import torch.nn.functional as F

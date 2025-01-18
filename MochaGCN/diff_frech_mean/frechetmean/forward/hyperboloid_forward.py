@@ -1,7 +1,7 @@
 import torch
 
-from diff_frech_mean.frechetmean.manifolds import Lorentz
-from diff_frech_mean.frechetmean.utils import EPS, darcosh
+from MochaGCN.diff_frech_mean.frechetmean.manifolds import Lorentz
+from MochaGCN.diff_frech_mean.frechetmean.utils import EPS, darcosh
 
 
 def frechet_hyperboloid_forward(X, w, K=-1.0, max_iter=1000, rtol=1e-6, atol=1e-6, verbose=False):

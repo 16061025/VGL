@@ -3,7 +3,7 @@ import abc
 import numpy as np
 import torch
 
-from diff_frech_mean.frechetmean.utils import EPS
+from MochaGCN.diff_frech_mean.frechetmean.utils import EPS
 
 
 class Manifold(metaclass=abc.ABCMeta):

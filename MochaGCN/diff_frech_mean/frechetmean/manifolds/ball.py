@@ -1,7 +1,7 @@
 import torch
 
 from .manifold import Manifold
-from diff_frech_mean.frechetmean.utils import EPS, cosh, sinh, tanh, arcosh, arsinh, artanh, sinhdiv, divsinh
+from MochaGCN.diff_frech_mean.frechetmean.utils import EPS, cosh, sinh, tanh, arcosh, arsinh, artanh, sinhdiv, divsinh
 
 
 class Poincare(Manifold):

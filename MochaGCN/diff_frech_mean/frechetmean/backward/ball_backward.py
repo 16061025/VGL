@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from diff_frech_mean.frechetmean.utils import d2arcosh, darcosh
+from MochaGCN.diff_frech_mean.frechetmean.utils import d2arcosh, darcosh
 
 
 def grad_var(X, y, w, K):

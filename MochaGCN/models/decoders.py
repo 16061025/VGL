@@ -1,11 +1,11 @@
 """Graph decoders."""
-import manifolds
+import MochaGCN.manifolds as manifolds
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from layers.att_layers import GraphAttentionLayer
-from layers.layers import GraphConvolution, Linear
+from MochaGCN.layers.att_layers import GraphAttentionLayer
+from MochaGCN.layers.layers import GraphConvolution, Linear
 
 
 class Decoder(nn.Module):

@@ -1,6 +1,6 @@
 import torch
 import torch.nn.functional as F
-from diff_frech_mean.frechetmean.frechet import frechet_mean
+from MochaGCN.diff_frech_mean.frechetmean.frechet import frechet_mean
 
 
 def frechet_agg(x, adj, man,B=None):

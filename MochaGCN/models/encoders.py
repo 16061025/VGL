@@ -5,13 +5,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-import manifolds
-from layers.att_layers import GraphAttentionLayer
-import layers.hyp_layers as hyp_layers
-from layers.layers import GraphConvolution, Linear, get_dim_act, GCNLayer
-import utils.math_utils as pmath
+import MochaGCN.manifolds as  manifolds
+from MochaGCN.layers.att_layers import GraphAttentionLayer
+import MochaGCN.layers.hyp_layers as hyp_layers
+from MochaGCN.layers.layers import GraphConvolution, Linear, get_dim_act, GCNLayer
+import MochaGCN.utils.math_utils as pmath
 from torch_geometric.nn import GCNConv
-from Norm.norm import Norm
+from MochaGCN.Norm.norm import Norm
 
 
 class Encoder(nn.Module):
@@ -138,7 +138,7 @@ class HGCN(Encoder):
         dims, acts, self.curvatures,use_acts = hyp_layers.get_dim_act_curv(args)
         print(dims,'dims')
         print(acts,'acts')
-        print(use_acts,'uise acts')
+        print(use_acts,'use acts')
         self.curvatures.append(self.c)
         hgc_layers = []
         # Norm(norm_type, self.args.embed_size)

@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
-from diff_frech_mean.frechetmean import Poincare as Frechet_Poincare
-from diff_frech_mean.frechetmean.frechet import frechet_mean
-from diff_frech_mean.riemannian_batch_norm import RiemannianBatchNorm
+from MochaGCN.diff_frech_mean.frechetmean import Poincare as Frechet_Poincare
+from MochaGCN.diff_frech_mean.frechetmean.frechet import frechet_mean
+from MochaGCN.diff_frech_mean.riemannian_batch_norm import RiemannianBatchNorm
 # from diff_frech_mean.frechet_agg import frechet_mean
 class Norm(nn.Module):
 

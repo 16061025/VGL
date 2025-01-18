@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import math
 
-from diff_frech_mean.frechetmean.manifolds import Poincare, Lorentz
-from diff_frech_mean.frechetmean.frechet import frechet_mean
+from MochaGCN.diff_frech_mean.frechetmean.manifolds import Poincare, Lorentz
+from MochaGCN.diff_frech_mean.frechetmean.frechet import frechet_mean
 
 
 class RiemannianBatchNorm(nn.Module):

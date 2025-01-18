@@ -253,3 +253,26 @@ def load_data_airport(dataset_str, data_path, return_label=False):
     else:
         return sp.csr_matrix(adj), features
 
+
+def create_HGCN_data_from_VG(EEG_visibility_graph_list, args):
+    '''
+
+
+    :param EEG_visibility_graph_list:
+    :return: data that format satisfy HGCN requirement
+    '''
+    for EEG_visibility_graph in EEG_visibility_graph_list:
+        adj, features, label = EEG_visibility_graph
+        data = {'adj_train': adj, 'features': features, 'label': label}
+        adj_train, train_edges, train_edges_false, val_edges, val_edges_false, test_edges, test_edges_false = mask_edges(
+            adj, args.val_prop, args.test_prop, args.split_seed
+        )
+        data['adj_train'] = adj_train
+        data['train_edges'], data['train_edges_false'] = train_edges, train_edges_false
+        data['val_edges'], data['val_edges_false'] = val_edges, val_edges_false
+        data['test_edges'], data['test_edges_false'] = test_edges, test_edges_false
+        data['adj_train_norm'], data['features'] = process(
+            data['adj_train'], data['features'], args.normalize_adj, args.normalize_feats
+        )
+    return data
+

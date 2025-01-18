@@ -1,3 +1,5 @@
+import logging
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -18,11 +20,11 @@ class VGLModel(nn.Module):
         self.hgcn_module = [[] for i in range(self.n_channels)]
         for i in range(self.n_channels):
             for j in range(self.n_sections):
-                self.hgcn_module[i].append(LPModel(args))
-        self.RDM_module = RDMModel()
+                self.hgcn_module[i].append(LPModel(args).to(args.device))
+        self.RDM_module = RDMModel().to(args.device)
         args.feat_dim = args.mocha_feat_dim
         args.n_nodes = args.mocha_n_nodes
-        self.MochaGCN_module = NCModel(args)
+        self.MochaGCN_module = NCModel(args).to(args.device)
         return
 
     # def forward(self, feats, adjs):
@@ -49,17 +51,18 @@ class VGLModel(nn.Module):
     #     return pred
 
     def forward(self, feats, adjs):
+        device = feats.device
         batch_size = feats.size()[0]
         all_channel_embeddings = [[] for i in range(self.n_channels)]
         for i in range(self.n_channels):
             for j in range(self.n_sections):
-                adj_seldimi = adjs.index_select(1, torch.tensor([i]))
-                adj_seldimij = adj_seldimi.index_select(2, torch.tensor([j]))
+                adj_seldimi = adjs.index_select(1, torch.tensor([i]).to(device))
+                adj_seldimij = adj_seldimi.index_select(2, torch.tensor([j]).to(device))
                 adj = torch.squeeze(adj_seldimij)
                 adj = adj.to_sparse()
 
-                feat_seldimi = feats.index_select(1, torch.tensor([i]))
-                feat_seldimij = feat_seldimi.index_select(2, torch.tensor([j]))
+                feat_seldimi = feats.index_select(1, torch.tensor([i]).to(device))
+                feat_seldimij = feat_seldimi.index_select(2, torch.tensor([j]).to(device))
                 feat = torch.squeeze(feat_seldimij)
 
                 all_channel_embeddings[i].append(self.hgcn_module[i][j].encode(feat, adj))
@@ -69,15 +72,14 @@ class VGLModel(nn.Module):
         all_channel_embeddings = torch.stack(all_channel_embeddings, dim=1)
         brain_graph = self.RDM_module(all_channel_embeddings)
 
-        one_hot_feat = torch.eye(brain_graph.size()[-1]).repeat(batch_size, 1)
+        one_hot_feat = torch.eye(brain_graph.size()[-1]).repeat(batch_size, 1).to(device)
         mocha_collect_brain_graph_list = list(torch.unbind(brain_graph))
         mocha_collect_brain_graph = torch.block_diag(*mocha_collect_brain_graph_list)
 
 
-
         Mocha_encode_embeddings = self.MochaGCN_module.encode(one_hot_feat , mocha_collect_brain_graph)
         decodeoutput = self.MochaGCN_module.decode(Mocha_encode_embeddings, brain_graph)
-        batch = torch.range(0, batch_size-1, dtype=torch.int64).repeat_interleave(brain_graph.size()[-1])
+        batch = torch.arange(0, batch_size, dtype=torch.int64).repeat_interleave(brain_graph.size()[-1]).to(device)
 
         mean_pool_decodeoutput = global_mean_pool(decodeoutput, batch)
         pred = F.sigmoid(mean_pool_decodeoutput)
@@ -85,10 +87,13 @@ class VGLModel(nn.Module):
 
 
 def train_VGLModel(VGL_model, train_loader, loss_fn, optimizer, args):
-
+    res = {}
     VGL_model.train()
     for batch, data in enumerate(train_loader):
         feats, adjs, y = data
+        feats = feats.to(args.device)
+        adjs = adjs.to(args.device)
+        y = y.to(args.device)
         size = len(train_loader.dataset)
         pre = VGL_model(feats, adjs)
 
@@ -97,24 +102,37 @@ def train_VGLModel(VGL_model, train_loader, loss_fn, optimizer, args):
         optimizer.step()
         optimizer.zero_grad()
 
-        if batch % 100 == 0:
-            loss, current = loss.item(), (batch + 1) * len(y)
-            print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
-    return
+
+    loss = loss.item()
+    res["loss"] = loss
+    return res
 
 def test_VGLModel(VGL_model, test_loader, loss_fn, args):
+    res = {}
     device = args.device
     size = len(test_loader.dataset)
     num_batches = len(test_loader)
     VGL_model.eval()
     test_loss, correct = 0, 0
     with torch.no_grad():
-        for X, y in test_loader:
-            X, y = X.to(device), y.to(device)
-            pred = VGL_model(X)
+        for batch, data in enumerate(test_loader):
+            feats, adjs, y = data
+            feats = feats.to(args.device)
+            adjs = adjs.to(args.device)
+            y = y.to(args.device)
+            pred = VGL_model(feats, adjs)
             test_loss += loss_fn(pred, y).item()
-            correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+            print("prediction res and label")
+            print(pred.tolist())
+            print(pred.argmax(1).tolist())
+            print("true res and label")
+            print(y.tolist())
+            print(y.argmax(1).tolist())
+            correct += (pred.argmax(1) == y.argmax(1)).type(torch.float).sum().item()
     test_loss /= num_batches
     correct /= size
-    print(f"Test Error: \n Accuracy: {(100 * correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+
+    res['correct'] = correct
+    res['Angloss'] = test_loss
+    return res
 

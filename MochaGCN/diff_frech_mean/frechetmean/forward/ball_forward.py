@@ -1,6 +1,6 @@
 import torch
 
-from diff_frech_mean.frechetmean.utils import EPS, arcosh
+from MochaGCN.diff_frech_mean.frechetmean.utils import EPS, arcosh
 
 
 def l_prime(y):

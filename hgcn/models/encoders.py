@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-import manifolds
+import hgcn.manifolds as manifolds
 from hgcn.layers.att_layers import GraphAttentionLayer
 import hgcn.layers.hyp_layers as hyp_layers
 from hgcn.layers.layers import GraphConvolution, Linear, get_dim_act
