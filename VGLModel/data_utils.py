@@ -10,7 +10,7 @@ import math
 from VisibilityGraph.VisibilityGraph import construct_EEG_visibility_graph, \
     construct_EEG_visibility_graph_single_process
 from hgcn.utils.data_utils import  sparse_mx_to_torch_sparse_tensor
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, ConcatDataset
 import torch.nn.functional as F
 import pickle
 from tqdm import tqdm
@@ -38,6 +38,7 @@ class VGLDataset(Dataset):
 
     def __getitem__(self, idx):
         return self.feats[idx], self.adjs[idx], self.labels[idx]
+
 
 
 def load_EEG_raw_data(args):
@@ -106,10 +107,10 @@ def load_EEG_raw_data(args):
     return all_raw_list
 
 def construct_VGL_dataset(VG_list):
-    data_feats = []
-    data_adjs = []
-    data_y = []
-    random.shuffle(VG_list)
+
+    AD_data = []
+    nonAD_data = []
+
     for patient_data in tqdm(VG_list):
         x_data = patient_data['VG']
         patient_feats = [[] for i in range(len(x_data))]
@@ -122,28 +123,51 @@ def construct_VGL_dataset(VG_list):
                 patient_adjs[i].append(adj)
         if patient_data['label']=="AD":
             y = 1
+            AD_data.append([patient_feats, patient_adjs, y])
+
         else:
             y = 0
-        #print("user feat len:", len(patient_feats))
-        data_feats.append(patient_feats)
-        data_adjs.append(patient_adjs)
-        data_y.append(y)
-    data_feats = torch.Tensor(np.array(data_feats))
-    data_adjs = torch.Tensor(np.array(data_adjs))
-    data_y = torch.tensor(data_y, dtype=torch.int64)
-    data_y = F.one_hot(data_y, num_classes=2).float()
+            nonAD_data.append([patient_feats, patient_adjs, y])
+
+    print("AD len", len(AD_data))
+    print("nonAD len", len(nonAD_data))
+
+
+
+    def divide_train_test(data, ratio=0.8):
+
+        split_index = math.floor(ratio*len(data))
+
+        train_data_list = data[0:split_index]
+        test_data_list = data[split_index:]
+
+        return train_data_list, test_data_list
     ratio = 0.8
-    split_index = math.floor(ratio*len(VG_list))
+    AD_train_data, AD_test_data = divide_train_test(AD_data, ratio)
+    nonAD_train_data, nonAD_test_data = divide_train_test(nonAD_data, ratio)
 
-    train_data_feats = data_feats[0:split_index]
-    train_data_adjs = data_adjs[0:split_index]
-    train_data_y = data_y[0:split_index]
-    train_dataset = VGLDataset(train_data_feats, train_data_adjs, train_data_y)
+    train_data = AD_train_data + nonAD_train_data
+    test_data = AD_test_data + nonAD_test_data
+    random.shuffle(train_data)
+    random.shuffle(test_data)
 
-    test_data_feats = data_feats[split_index:]
-    test_data_adjs = data_adjs[split_index:]
-    test_data_y = data_y[split_index:]
-    test_dataset = VGLDataset(test_data_feats, test_data_adjs, test_data_y)
+    def data2dataset(data):
+        feat_index = 0
+        adj_index= 1
+        y_index = 2
+        data_feats = [row[feat_index] for row in data]
+        data_adjs = [row[adj_index] for row in data]
+        data_y = [row[y_index] for row in data]
+
+        data_feats = torch.Tensor(np.array(data_feats))
+        data_adjs = torch.Tensor(np.array(data_adjs))
+        data_y = torch.tensor(data_y, dtype=torch.int64)
+        data_y = F.one_hot(data_y, num_classes=2).float()
+        dataset = VGLDataset(data_feats, data_adjs, data_y)
+        return dataset
+
+    train_dataset = data2dataset(train_data)
+    test_dataset = data2dataset(test_data)
 
     return train_dataset, test_dataset
 

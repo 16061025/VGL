@@ -1,13 +1,14 @@
 import datetime
 import logging
 import os
+import random
 
 from args import parser
 from VGLModel.data_utils import load_VGL_dataset
 
 import torch
 from torch.utils.data import DataLoader
-from VGLModel.model import VGLModel
+from VGLModel.model import VGLModel, VGLModel_shareHGCN
 from VGLModel.model import train_VGLModel, test_VGLModel
 
 
@@ -16,6 +17,7 @@ if __name__ == '__main__':
 
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
+    random.seed(args.seed)
 
     log_dir = args.VGL_save_dir
     os.makedirs(log_dir, exist_ok=True)
@@ -41,17 +43,24 @@ if __name__ == '__main__':
     train_dataloader = DataLoader(VGL_train_data, batch_size=args.VGL_batch_size)
     test_dataloader = DataLoader(VGL_test_data, batch_size=args.VGL_batch_size)
 
-    args.device = 'cuda:' + str(args.cuda) if int(args.cuda) >= 0 else 'cpu'
+    args.device = 'cuda:' + str(args.cuda) if int(args.cuda) >= 0 and torch.cuda.is_available() else 'cpu'
     device = args.device
 
     print(f"device is {device}")
-    model = VGLModel(args).to(device)
+    if args.share_encoder:
+        model = VGLModel_shareHGCN(args).to(device)
+    else:
+        model = VGLModel(args).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.VGL_lr)
 
     print(model)
     logging.info(
         model
     )
+    print("Trainable parameters:")
+    for name, param in model.named_parameters():
+        if param.requires_grad:
+            print(f"{name}: shape={param.shape}, dtype={param.dtype}")
     # for name, param in model.named_parameters():
     #     print(f"Name: {name}")
     #     print(f"Shape: {param.shape}")
@@ -60,6 +69,11 @@ if __name__ == '__main__':
 
 
     loss_fn = torch.nn.CrossEntropyLoss()
+    _, class_counts = torch.unique(VGL_train_data.labels, dim=0, return_counts=True)
+    class_counts = torch.flip(class_counts, dims=[0])
+    class_weights = 1.0 / class_counts  # 逆样本频率
+    class_weights = class_weights / class_weights.sum()
+    loss_fn = torch.nn.CrossEntropyLoss(weight=class_weights)
 
     epochs = args.VGL_epochs
     for t in range(epochs):

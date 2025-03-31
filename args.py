@@ -14,7 +14,7 @@ config_args = {
         'optimizer': ('Adam', 'which optimizer to use, can be any of [Adam, RiemannianAdam]'),
         'momentum': (0.999, 'momentum in optimizer'),
         'patience': (100, 'patience for early stopping'),
-        'seed': (1234, 'seed for training'),
+        'seed': (2025, 'seed for training'),
         'log-freq': (1, 'how often to compute print train/val metrics (in epochs)'),
         'eval-freq': (1, 'how often to compute val metrics (in epochs)'),
         'save': (0, '1 to save model and logs and 0 otherwise'),
@@ -24,7 +24,8 @@ config_args = {
         'gamma': (0.5, 'gamma for lr scheduler'),
         'print-epoch': (True, ''),
         'grad-clip': (None, 'max norm for gradient clipping, or None for no gradient clipping'),
-        'min-epochs': (100, 'do not early stop before min-epochs')
+        'min-epochs': (100, 'do not early stop before min-epochs'),
+        'share_encoder':(True, 'channel section visual graph share encoder')
     },
     'model_config': {
         'task': ('nc', 'which tasks to train on, can be any of [lp, nc]'),
@@ -62,7 +63,7 @@ config_args = {
         'data_dir':("./data", "data path")
     },
     'VGL_training_config': {
-        'VGL_lr': (0.01, 'learning rate'),
+        'VGL_lr': (0.05, 'learning rate'),
         #'VGL_cuda': (-1, 'which cuda device to use (-1 for cpu training)'),
         'VGL_epochs': (100, 'maximum number of epochs to train for'),
         'VGL_seed': (1234, 'seed for training'),
