@@ -8,7 +8,7 @@ from VGLModel.data_utils import load_VGL_dataset
 
 import torch
 from torch.utils.data import DataLoader
-from VGLModel.model import VGLModel, VGLModel_shareHGCN
+from VGLModel.model import VGLModel, VGLModel_shareHGCN, VGLModel_MLP
 from VGLModel.model import train_VGLModel, test_VGLModel
 
 
@@ -49,6 +49,7 @@ if __name__ == '__main__':
     print(f"device is {device}")
     if args.share_encoder:
         model = VGLModel_shareHGCN(args).to(device)
+        #model = VGLModel_MLP(args).to(device)
     else:
         model = VGLModel(args).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.VGL_lr)

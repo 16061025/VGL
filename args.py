@@ -59,6 +59,7 @@ config_args = {
     'VGL_dataconfig':{
         'n_channels': (128, 'number of EEG data channels'),
         'n_sections': (5, 'split number of a channel'),
+        'n_resample': (30, 'resample number of a section'),
         'n_classes':(2, 'number of label classes'),
         'data_dir':("./data", "data path")
     },

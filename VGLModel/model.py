@@ -11,6 +11,7 @@ from MochaGCN.models.base_models import NCModel
 
 from hgcn.models.base_models import LPModel
 
+from MLP.MLP_model import dimreduction_MLP_model, prediction_MLP_model
 
 class VGLModel(nn.Module):
     def __init__(self, args):
@@ -110,6 +111,45 @@ class VGLModel_shareHGCN(nn.Module):
         mean_pool_decodeoutput = global_mean_pool(decodeoutput, batch)
         pred = F.sigmoid(mean_pool_decodeoutput)
         return pred
+
+
+class VGLModel_MLP(nn.Module):
+    def __init__(self, args):
+        super().__init__()
+        self.n_channels = args.n_channels
+        self.n_sections = args.n_sections
+        self.hgcn_module = LPModel(args).to(args.device)
+        embeddingsdim = self.n_channels * self.n_sections * args.n_resample * args.dim
+        reductiondim = args.dim
+        self.dimreduction_MLP = dimreduction_MLP_model(input_dim=embeddingsdim, output_dim=reductiondim)
+        self.prediction_MLP = prediction_MLP_model(input_dim=reductiondim, output_dim=2)
+
+        return
+
+    def forward(self, feats, adjs):
+        device = feats.device
+        batch_size = feats.size()[0]
+        all_channel_embeddings = [[] for i in range(self.n_channels)]
+        for i in range(self.n_channels):
+            for j in range(self.n_sections):
+                adj_seldimi = adjs.index_select(1, torch.tensor([i]).to(device))
+                adj_seldimij = adj_seldimi.index_select(2, torch.tensor([j]).to(device))
+                adj = torch.squeeze(adj_seldimij)
+                adj = adj.to_sparse()
+
+                feat_seldimi = feats.index_select(1, torch.tensor([i]).to(device))
+                feat_seldimij = feat_seldimi.index_select(2, torch.tensor([j]).to(device))
+                feat = torch.squeeze(feat_seldimij)
+
+                all_channel_embeddings[i].append(self.hgcn_module.encode(feat, adj))
+        for i in range(self.n_channels):
+            channel_embedding = torch.cat(all_channel_embeddings[i], 1)
+            all_channel_embeddings[i] = channel_embedding
+        all_channel_embeddings = torch.stack(all_channel_embeddings, dim=1)
+        dimreduction_embeddings = self.dimreduction_MLP(all_channel_embeddings)
+        pred = self.prediction_MLP(dimreduction_embeddings)
+        return pred
+
 
 def train_VGLModel(VGL_model, train_loader, loss_fn, optimizer, args):
     res = {}
