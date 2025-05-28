@@ -77,7 +77,7 @@ if __name__ == '__main__':
 
     epochs = args.VGL_epochs
     for t in range(epochs):
-        print(f"{datetime.datetime.now()} Epoch {t + 1}\n-------------------------------")
+        print(f"{datetime.now()} Epoch {t + 1}\n-------------------------------")
 
         res = train_VGLModel(model, train_dataloader, loss_fn, optimizer, args)
         loss = res["loss"]

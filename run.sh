@@ -1,1 +1,1 @@
-nohup python -u main.py --task lp --dataset disease_lp --model HGCN --lr 0.01 --dim 16 --num-layers 2 --num-layers 2 --act relu --bias 1 --dropout 0 --weight-decay 0 --manifold PoincareBall --normalize-feats 0 --data_dir "./data" --cuda 0 > trainVGL.out 2>&1 &
+nohup python -u main.py --task lp --model HGCN --lr 0.01 --dim 16 --num-layers 2 --num-layers 2 --act relu --bias 1 --dropout 0 --weight-decay 0 --manifold PoincareBall --normalize-feats 0 --data_dir "./data" --dataset "Alzheimer" > trainVGL.out 2>&1 &

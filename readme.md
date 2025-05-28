@@ -17,10 +17,16 @@ Download EEG data into your data directory.
 ```angular2html
 YOUR/DATA/DIR
 |
-|- EEG data
+|- Alzheimer
+|- bonn
+   |- AET.mat
+   |- train_label_Bonn.mat
+|- brainlat
    |
-   |- 1_AD
-   |- 2_bvFTD
+   |- EEG data
+      |
+      |- 1_AD
+      |- 2_bvFTD
    ...
 
 ```
@@ -29,13 +35,13 @@ Dataset preprocessing
 
 |           | sample         | label |
 |-----------|----------------|-------|
-| Alzheimer | 256 node Graph | 单元格3  |
-| autsim    | 256 node Graph | 单元格6  |
-| bonn      | 256 node Graph | 单元格3  |
-| brainlat  |                | 单元格6  |
-| DREAMER   | 256 node Graph | 单元格3  |
-| Epilepsy  | 256 node Graph | 单元格6  |
-| MDD       | 256 node Graph | 单元格6  |
+| Alzheimer | 256 node Graph | [0,1] |
+| autsim    | 256 node Graph | [0,1]  |
+| bonn      | 256 node Graph | [0,1]  |
+| brainlat  |                | [0,1]  |
+| DREAMER   | 256 node Graph | [0,1]  |
+| Epilepsy  | 256 node Graph | [0,1]  |
+| MDD       | 256 node Graph | [0,1]  |
 
 
 ## Run Model
