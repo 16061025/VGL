@@ -112,25 +112,6 @@ class VGLModel_shareHGCN(nn.Module):
         pred = F.sigmoid(mean_pool_decodeoutput)
         return pred
 
-class VGLModel_MLP_bonn(nn.Module):
-    def __init__(self, args):
-        super().__init__()
-        self.hgcn_module = LPModel(args).to(args.device)
-        embeddingsdim = args.bonn_N_node * args.dim
-        reductiondim = args.dim
-        self.dimreduction_MLP = dimreduction_MLP_model(input_dim=embeddingsdim, output_dim=reductiondim).to(args.device)
-        self.prediction_MLP = prediction_MLP_model(input_dim=reductiondim, output_dim=2).to(args.device)
-
-        return
-
-    def forward(self, feats, adjs):
-        device = feats.device
-        batch_size = feats.size()[0]
-        embeddings = self.hgcn_module.encode(feats, adjs)
-
-        dimreduction_embeddings = self.dimreduction_MLP(embeddings)
-        pred = self.prediction_MLP(dimreduction_embeddings)
-        return pred
 
 class VGLModel_MLP(nn.Module):
     def __init__(self, args):
@@ -140,8 +121,8 @@ class VGLModel_MLP(nn.Module):
         self.hgcn_module = LPModel(args).to(args.device)
         embeddingsdim = self.n_channels * self.n_sections * args.n_resample * args.dim
         reductiondim = args.dim
-        self.dimreduction_MLP = dimreduction_MLP_model(input_dim=embeddingsdim, output_dim=reductiondim)
-        self.prediction_MLP = prediction_MLP_model(input_dim=reductiondim, output_dim=2)
+        self.dimreduction_MLP = dimreduction_MLP_model(input_dim=embeddingsdim, output_dim=reductiondim).to(args.device)
+        self.prediction_MLP = prediction_MLP_model(input_dim=reductiondim, output_dim=2).to(args.device)
 
         return
 
@@ -166,6 +147,27 @@ class VGLModel_MLP(nn.Module):
             all_channel_embeddings[i] = channel_embedding
         all_channel_embeddings = torch.stack(all_channel_embeddings, dim=1)
         dimreduction_embeddings = self.dimreduction_MLP(all_channel_embeddings)
+        pred = self.prediction_MLP(dimreduction_embeddings)
+        return pred
+
+
+class VGLModel_MLP_bonn(nn.Module):
+    def __init__(self, args):
+        super().__init__()
+        self.hgcn_module = LPModel(args).to(args.device)
+        embeddingsdim = args.n_nodes * args.dim
+        reductiondim = args.dim
+        self.dimreduction_MLP = dimreduction_MLP_model(input_dim=embeddingsdim, output_dim=reductiondim).to(args.device)
+        self.prediction_MLP = prediction_MLP_model(input_dim=reductiondim, output_dim=2).to(args.device)
+
+        return
+
+    def forward(self, feats, adjs):
+        device = feats.device
+        batch_size = feats.size()[0]
+        embeddings = self.hgcn_module.encode(feats, adjs)
+
+        dimreduction_embeddings = self.dimreduction_MLP(embeddings)
         pred = self.prediction_MLP(dimreduction_embeddings)
         return pred
 
@@ -197,14 +199,14 @@ def train_VGLModel(VGL_model, train_loader, loss_fn, optimizer, args):
         size += len(train_loader.dataset)
         correct += (pred.argmax(1) == y.argmax(1)).type(torch.float).sum().item()
 
-        if batch==0:
-            print("training...")
-            print("prediction res and label")
-            print(pred.tolist())
-            print(pred.argmax(1).tolist())
-            print("true res and label")
-            print(y.tolist())
-            print(y.argmax(1).tolist())
+        # if batch==0:
+        #     print("training...")
+        #     print("prediction res and label")
+        #     print(pred.tolist())
+        #     print(pred.argmax(1).tolist())
+        #     print("true res and label")
+        #     print(y.tolist())
+        #     print(y.argmax(1).tolist())
 
     correct /= size
     loss = loss.item()
@@ -227,12 +229,12 @@ def test_VGLModel(VGL_model, test_loader, loss_fn, args):
             y = y.to(args.device)
             pred = VGL_model(feats, adjs)
             test_loss += loss_fn(pred, y).item()
-            print("prediction res and label")
-            print(pred.tolist())
-            print(pred.argmax(1).tolist())
-            print("true res and label")
-            print(y.tolist())
-            print(y.argmax(1).tolist())
+            # print("prediction res and label")
+            # print(pred.tolist())
+            # print(pred.argmax(1).tolist())
+            # print("true res and label")
+            # print(y.tolist())
+            # print(y.argmax(1).tolist())
             correct += (pred.argmax(1) == y.argmax(1)).type(torch.float).sum().item()
     test_loss /= num_batches
     correct /= size

@@ -47,7 +47,7 @@ config_args = {
         'local-agg': (0, 'whether to local tangent space aggregation or not')
     },
     'data_config': {
-        'dataset': ('cora', 'which dataset to use'),
+        #'dataset': ('cora', 'which dataset to use'),
         'val-prop': (0.05, 'proportion of validation edges for link prediction'),
         'test-prop': (0.1, 'proportion of test edges for link prediction'),
         'use-feats': (1, 'whether to use node features or not'),
@@ -61,7 +61,8 @@ config_args = {
         'n_sections': (5, 'split number of a channel'),
         'n_resample': (30, 'resample number of a section'),
         'n_classes':(2, 'number of label classes'),
-        'data_dir':("./data", "data path")
+        'data_dir':("./data", "data path"),
+        'dataset': ('bonn', 'which dataset to use'),
     },
     'VGL_training_config': {
         'VGL_lr': (0.05, 'learning rate'),

@@ -4,13 +4,13 @@ import os
 import random
 
 from args import parser
-from VGLModel.data_utils import load_VGL_dataset
+from data_utils.loaddata_utils import load_VGL_dataset
 
 import torch
 from torch.utils.data import DataLoader
-from VGLModel.model import VGLModel, VGLModel_shareHGCN, VGLModel_MLP
+from VGLModel.model import VGLModel, VGLModel_shareHGCN, VGLModel_MLP, VGLModel_MLP_bonn
 from VGLModel.model import train_VGLModel, test_VGLModel
-
+from datetime import datetime
 
 if __name__ == '__main__':
     args = parser.parse_args()
@@ -19,10 +19,12 @@ if __name__ == '__main__':
     torch.cuda.manual_seed_all(args.seed)
     random.seed(args.seed)
 
+    current_time = datetime.now().strftime("%y%m%d_%H-%M-%S")
+
     log_dir = args.VGL_save_dir
     os.makedirs(log_dir, exist_ok=True)
     logging.basicConfig(
-        filename=os.path.join(log_dir, 'training.log'),
+        filename=os.path.join(log_dir, f"{current_time}_{args.dataset}_training.log"),
         level=logging.INFO,
         filemode='w',
         format='%(asctime)s - %(message)s'
@@ -38,7 +40,7 @@ if __name__ == '__main__':
     print(f"test data len is {len(VGL_test_data)}")
     print(f"train data len is {len(VGL_train_data)}")
     feats, adjs, y = VGL_train_data[0]
-    args.n_nodes, args.feat_dim = feats[0][0].shape
+    args.n_nodes, args.feat_dim = feats.shape
 
     train_dataloader = DataLoader(VGL_train_data, batch_size=args.VGL_batch_size)
     test_dataloader = DataLoader(VGL_test_data, batch_size=args.VGL_batch_size)
@@ -47,11 +49,8 @@ if __name__ == '__main__':
     device = args.device
 
     print(f"device is {device}")
-    if args.share_encoder:
-        model = VGLModel_shareHGCN(args).to(device)
-        #model = VGLModel_MLP(args).to(device)
-    else:
-        model = VGLModel(args).to(device)
+
+    model = VGLModel_MLP_bonn(args).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.VGL_lr)
 
     print(model)

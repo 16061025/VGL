@@ -24,6 +24,20 @@ YOUR/DATA/DIR
    ...
 
 ```
+
+Dataset preprocessing
+
+|           | sample         | label |
+|-----------|----------------|-------|
+| Alzheimer | 256 node Graph | 单元格3  |
+| autsim    | 256 node Graph | 单元格6  |
+| bonn      | 256 node Graph | 单元格3  |
+| brainlat  |                | 单元格6  |
+| DREAMER   | 256 node Graph | 单元格3  |
+| Epilepsy  | 256 node Graph | 单元格6  |
+| MDD       | 256 node Graph | 单元格6  |
+
+
 ## Run Model
 Before running the bash commend, modify `--data_dir` to your dataset directory
 ```angular2html

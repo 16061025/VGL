@@ -1,43 +1,23 @@
 import os
 import mne
-import matplotlib.pyplot as plt
+
 import numpy as np
 import glob
 
 import torch
 import random
 import math
-from VisibilityGraph.VisibilityGraph import construct_EEG_visibility_graph, \
-    construct_EEG_visibility_graph_single_process
+from VisibilityGraph.VisibilityGraph import construct_EEG_visibility_graph_single_process
 from hgcn.utils.data_utils import  sparse_mx_to_torch_sparse_tensor
-from torch.utils.data import Dataset, ConcatDataset
+
 import torch.nn.functional as F
 import pickle
 from tqdm import tqdm
+from data_utils.VGLDataset import VGLDataset
 
 
 
 
-
-def load_MRI_data():
-
-    return
-
-
-def VGL_collate_fn(batch):
-    return batch
-
-class VGLDataset(Dataset):
-    def __init__(self, feats, adjs, labels):
-        self.feats = feats
-        self.adjs = adjs
-        self.labels = labels
-
-    def __len__(self):
-        return len(self.feats)
-
-    def __getitem__(self, idx):
-        return self.feats[idx], self.adjs[idx], self.labels[idx]
 
 
 
@@ -47,7 +27,7 @@ def load_EEG_raw_data(args):
     :param args:
     :return: a list contians eeg raw data of N patients
     '''
-    EEG_raw_data_pickle_path = os.path.join(args.data_dir, "all_raw_list.pickle")
+    EEG_raw_data_pickle_path = os.path.join(args.data_dir, args.dataset, "all_raw_list.pickle")
     if os.path.exists(EEG_raw_data_pickle_path):
         print("load existing eeg raw data")
         with open(EEG_raw_data_pickle_path, "rb") as f:
@@ -57,7 +37,7 @@ def load_EEG_raw_data(args):
         print("load eeg raw data from .set files")
 
 
-    DATA_PATH = args.data_dir
+    DATA_PATH = os.path.join(args.data_dir, args.dataset)
 
     nor_DATA_PATH = os.path.normpath(DATA_PATH)
     splited_DATA_PATH = nor_DATA_PATH.split(os.sep)
@@ -172,7 +152,7 @@ def construct_VGL_dataset(VG_list):
     return train_dataset, test_dataset
 
 def load_VG_list_data(args):
-    EEG_VG_list_pickle_path = os.path.join(args.data_dir, "all_VG_list.pickle")
+    EEG_VG_list_pickle_path = os.path.join(args.data_dir, args.dataset, "all_VG_list.pickle")
     if os.path.exists(EEG_VG_list_pickle_path):
         print("load existing eeg VG data")
         with open(EEG_VG_list_pickle_path, "rb") as f:
@@ -189,20 +169,10 @@ def load_VG_list_data(args):
 
     return EEG_visibility_graph_list
 
-def load_VGL_dataset(args):
-    VGL_dataset_pickle_path = os.path.join(args.data_dir, "VGL_dataset.pickle")
 
-    if os.path.exists(VGL_dataset_pickle_path):
-        print("load existing VGL dataset")
-        with open(VGL_dataset_pickle_path, "rb") as f:
-            VGL_train_data, VGL_test_data = pickle.load(f)
-    else:
-        print("construct VGL dataset")
-        VG_list = load_VG_list_data(args)
-        VGL_train_data, VGL_test_data = construct_VGL_dataset(VG_list)
-        with open(VGL_dataset_pickle_path, "wb") as f:
-            pickle.dump((VGL_train_data, VGL_test_data), f)
-            print(f"VGL dataset has been saved to {VGL_dataset_pickle_path}")
+def load_brainlat_dataset(args):
 
+    VG_list = load_VG_list_data(args)
+    VGL_train_data, VGL_test_data = construct_VGL_dataset(VG_list)
 
     return VGL_train_data, VGL_test_data
