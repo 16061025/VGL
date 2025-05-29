@@ -63,6 +63,7 @@ config_args = {
         'n_classes':(2, 'number of label classes'),
         'data_dir':("./data", "data path"),
         'dataset': ('bonn', 'which dataset to use'),
+        'n_processor':(4, 'number of processor to process data'),
     },
     'VGL_training_config': {
         'VGL_lr': (0.05, 'learning rate'),

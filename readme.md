@@ -134,4 +134,6 @@ optional arguments:
                         mocha graph feat dim
   --mocha_n_nodes MOCHA_N_NODES
                         mocha graph n nodes
+  --dataset             datasetname
+  --n_processor         number of processor to process data
 ```

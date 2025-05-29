@@ -10,6 +10,8 @@ import numpy as np
 chunk_size = 256
 from data_utils.data_utils import tsnp2vg, divide_train_test, data2dataset, split_array
 
+from data_utils.data_utils import multi_process_data_list
+
 def construct_EEG_visibility_graph(EEG_data):
 
     vg_list = []
@@ -22,6 +24,9 @@ def construct_EEG_visibility_graph(EEG_data):
             label = 1
         else:
             label = 0
+
+        N_channels = min(2, N_channels)
+
         for i in range(N_channels):
             channel_ts, times = patient_EEG_raw[i, :]
             #channel_ts = patient_EEG_raw[i, :]
@@ -55,8 +60,6 @@ def load_EEG_raw_data(args):
     all_raw_list = []
     for set_file_path in tqdm(set_file_paths):
         if os.path.isfile(set_file_path):
-            print(set_file_path)
-
             try:
                 raw = mne.io.read_raw_eeglab(set_file_path)
             except:
@@ -87,7 +90,7 @@ def load_VG_list_data(args):
         print("construct eeg VG data from eeg raw data")
         EEG_raw_data = load_EEG_raw_data(args)
 
-        visibility_graph_list = construct_EEG_visibility_graph(EEG_raw_data)
+        visibility_graph_list = multi_process_data_list(EEG_raw_data, construct_EEG_visibility_graph, args.n_processor)
         with open(EEG_VG_list_pickle_path, "wb") as f:
             pickle.dump(visibility_graph_list, f)
             print(f"eeg VG data has been saved to {EEG_VG_list_pickle_path}")
@@ -97,6 +100,7 @@ def load_VG_list_data(args):
 
 def load_autism_dataset(args):
     vg_list = load_VG_list_data(args)
+
     random.shuffle(vg_list)
     random.shuffle(vg_list)
 
@@ -105,9 +109,6 @@ def load_autism_dataset(args):
     train_dataset = data2dataset(train_data)
     test_dataset = data2dataset(test_data)
     return train_dataset, test_dataset
-
-
-    return VGL_train_data, VGL_test_data
 
 
 

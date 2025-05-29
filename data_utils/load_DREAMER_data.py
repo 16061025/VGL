@@ -6,21 +6,20 @@ import random
 from tqdm import tqdm
 import scipy.io as sio
 from data_utils.data_utils import tsnp2vg, divide_train_test, data2dataset, split_array
+from data_utils.data_utils import multi_process_data_list
 
 chunk_size = 256
 
-def DREAMER2graphdataset(DRMEARstruct):
-
-
-
+def data2vglist(Data):
     vg_list = []
-    Data = DRMEARstruct['Data'][0][0][0]
-    for patient_i in tqdm(range(len(Data))): #23 people
+
+    for patient_i in tqdm(range(len(Data))):  # 23 people
         data = Data[patient_i][0][0]
         ScoreValence = data['ScoreValence']
         EEG = data['EEG'][0][0]
         stimuli = EEG['stimuli']
-        for stim_j in range(len(stimuli)): #18 stimuli
+        #for stim_j in range(len(stimuli)):  # 18 stimuli
+        for stim_j in range(1):
             Valence = ScoreValence[stim_j][0]
             if Valence < 2.5:
                 Valence = 0
@@ -28,13 +27,22 @@ def DREAMER2graphdataset(DRMEARstruct):
                 Valence = 1
             EEG_data = stimuli[stim_j][0]
             EEG_data_np = np.array(EEG_data).T
-            for ch_k in range(len(EEG_data_np)): #14 channel per stimuli
+            for ch_k in range(len(EEG_data_np)):  # 14 channel per stimuli
                 channel_ts_np = EEG_data_np[ch_k]
-                #split 256 per section
+                # split 256 per section
                 segments = split_array(channel_ts_np, chunk_size)
                 for segment in segments:
                     adj, feat = tsnp2vg(segment)
                     vg_list.append([feat, adj, Valence])
+
+    return vg_list
+def DREAMER2graphdataset(DRMEARstruct, processor_cnt):
+
+
+    Data = DRMEARstruct['Data'][0][0][0]
+
+
+    vg_list = multi_process_data_list(Data, data2vglist, processor_cnt)
 
     random.shuffle(vg_list)
     random.shuffle(vg_list)
@@ -52,5 +60,5 @@ def load_DREAMER_dataset(args):
 
     DREAMERstruct = sio.loadmat(path_mat_data)["DREAMER"]
 
-    VGL_train_data, VGL_test_data = DREAMER2graphdataset(DREAMERstruct)
+    VGL_train_data, VGL_test_data = DREAMER2graphdataset(DREAMERstruct, args.n_processor)
     return VGL_train_data, VGL_test_data
